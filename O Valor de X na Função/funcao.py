@@ -50,6 +50,13 @@ def algoritmo_genetico(tamanho_populacao=10, tamanho_cromossomo=16,
     for geracao in range(num_geracoes):
         fitness = [funcao_objetivo(decodificar_individuo(ind)) for ind in populacao]
         
+        melhor_indice = np.argmin(fitness)
+        melhor_individuo = populacao[melhor_indice]
+        melhor_x = decodificar_individuo(melhor_individuo)
+        melhor_valor = funcao_objetivo(melhor_x)
+        
+        print(f"Geração {geracao + 1}: x = {melhor_x:.4f}, f(x) = {melhor_valor:.4f}")
+        
         nova_populacao = []
         
         if elitismo:
@@ -77,8 +84,9 @@ def algoritmo_genetico(tamanho_populacao=10, tamanho_cromossomo=16,
     melhor_indice = np.argmin(fitness_final)
     melhor_individuo = populacao[melhor_indice]
     melhor_x = decodificar_individuo(melhor_individuo)
+    melhor_valor = funcao_objetivo(melhor_x)
     
-    return melhor_x, funcao_objetivo(melhor_x)
+    print("\nMelhor solução encontrada:")
+    print(f"x = {melhor_x:.4f}, f(x) = {melhor_valor:.4f}")
 
-melhor_x, melhor_valor = algoritmo_genetico(num_geracoes=100, taxa_mutacao=0.01, tipo_crossover=1, elitismo=True, percentual_elite=0.2)
-print(f"Melhor x: {melhor_x}, Valor mínimo de f(x): {melhor_valor}")
+algoritmo_genetico(num_geracoes=50, taxa_mutacao=0.01, tipo_crossover=1, elitismo=True, percentual_elite=0.2)
