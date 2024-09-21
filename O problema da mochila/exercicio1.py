@@ -1,25 +1,30 @@
 import random
 
-def avaliar_fitness(cromossomo, pesos, valores, peso_maximo):
+def fitness(cromossomo, pesos_valores, peso_max):
     valor_total = 0
     peso_total = 0
     
     for i in range(len(cromossomo)):
         if cromossomo[i] == 1:
-            peso_total += pesos[i]
-            valor_total += valores[i]
+            peso_total += pesos_valores[i][0]
+            valor_total += pesos_valores[i][1]
     
-    if peso_total > peso_maximo:
-        return 0  
-    return valor_total
+    if peso_total > peso_max:
+        return 0 
+    else:
+        return valor_total
 
-def gerar_cromossomo(n):
-    return [random.randint(0, 1) for _ in range(n)]
+def gerar_cromossomo(tamanho):
+    return [random.randint(0, 1) for _ in range(tamanho)]
+
+def selecao_via_torneio(populacao, fitness_scores, k=3):
+    torneio = random.sample(list(zip(populacao, fitness_scores)), k)
+    return max(torneio, key=lambda x: x[1])[0]
 
 def crossover(pai1, pai2):
-    ponto_corte = random.randint(1, len(pai1) - 1)
-    filho1 = pai1[:ponto_corte] + pai2[ponto_corte:]
-    filho2 = pai2[:ponto_corte] + pai1[ponto_corte:]
+    ponto_de_corte = random.randint(1, len(pai1) - 1)
+    filho1 = pai1[:ponto_de_corte] + pai2[ponto_de_corte:]
+    filho2 = pai2[:ponto_de_corte] + pai1[ponto_de_corte:]
     return filho1, filho2
 
 def mutacao(cromossomo, taxa_mutacao=0.01):
@@ -28,47 +33,38 @@ def mutacao(cromossomo, taxa_mutacao=0.01):
             cromossomo[i] = 1 - cromossomo[i] 
     return cromossomo
 
-def algoritmo_genetico(pesos, valores, peso_maximo, num_geracoes, num_individuos):
-    num_itens = len(pesos)
+def algoritmo_genetico(pesos_valores, peso_max, num_cromossomos, num_geracoes):
+    populacao = [gerar_cromossomo(len(pesos_valores)) for _ in range(num_cromossomos)]
     
-    populacao = [gerar_cromossomo(num_itens) for _ in range(num_individuos)]
-    melhor_individuo_geracao = []
+    resultado_por_geracao = []
     
     for geracao in range(num_geracoes):
-
-        fitness = [avaliar_fitness(cromossomo, pesos, valores, peso_maximo) for cromossomo in populacao]
+        fitness_scores = [fitness(cromo, pesos_valores, peso_max) for cromo in populacao]
         
-        melhor_fitness = max(fitness)
-        melhor_individuo = populacao[fitness.index(melhor_fitness)]
-        melhor_individuo_geracao.append(melhor_individuo)
+        melhor_individuo = max(populacao, key=lambda cromo: fitness(cromo, pesos_valores, peso_max))
+        melhor_valor = fitness(melhor_individuo, pesos_valores, peso_max)
+        resultado_por_geracao.append([melhor_valor, melhor_individuo])
         
         nova_populacao = []
-        while len(nova_populacao) < num_individuos:
-            pai1 = torneio(populacao, fitness)
-            pai2 = torneio(populacao, fitness)
-            filho1, filho2 = crossover(pai1, pai2)
-            nova_populacao.extend([mutacao(filho1), mutacao(filho2)])
         
-        populacao = nova_populacao[:num_individuos]
+        while len(nova_populacao) < num_cromossomos:
+            pai1 = selecao_via_torneio(populacao, fitness_scores)
+            pai2 = selecao_via_torneio(populacao, fitness_scores)
+            filho1, filho2 = crossover(pai1, pai2)
+            filho1 = mutacao(filho1)
+            filho2 = mutacao(filho2)
+            nova_populacao.extend([filho1, filho2])
+        
+        populacao = nova_populacao[:num_cromossomos]  
     
-    fitness_final = [avaliar_fitness(cromossomo, pesos, valores, peso_maximo) for cromossomo in populacao]
-    melhor_fitness_final = max(fitness_final)
-    melhor_solucao = populacao[fitness_final.index(melhor_fitness_final)]
-    
-    return melhor_solucao, melhor_individuo_geracao
+    return resultado_por_geracao
 
-def torneio(populacao, fitness):
-    competidores = random.sample(list(zip(populacao, fitness)), 3)
-    competidores.sort(key=lambda x: x[1], reverse=True)
-    return competidores[0][0]
+pesos_e_valores = [[2, 10], [4, 30], [6, 300], [8, 10], [8, 30], [8, 300], [12, 50], [25, 75], [50, 100], [100, 400]]
+peso_maximo = 100
+numero_de_cromossomos = 150
+geracoes = 50
 
-pesos = [2, 3, 6, 7, 5]
-valores = [6, 5, 8, 9, 7]
-peso_maximo = 15
-num_geracoes = 100
-num_individuos = 10
+resultado = algoritmo_genetico(pesos_e_valores, peso_maximo, numero_de_cromossomos, geracoes)
 
-melhor_solucao, melhores_por_geracao = algoritmo_genetico(pesos, valores, peso_maximo, num_geracoes, num_individuos)
-
-print("Melhor solução:", melhor_solucao)
-print("Melhores indivíduos por geração:", melhores_por_geracao)
+for i, (valor, individuo) in enumerate(resultado[:10]):
+    print(f"Geração {i + 1}: Valor = {valor}, Indivíduo = {individuo}")
